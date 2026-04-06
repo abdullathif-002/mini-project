@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Student - Student Management System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>📚 Student Management System</h1>
+            <p>Add a New Student</p>
+            <button id="logoutBtn" class="btn-secondary logout-btn">Logout</button>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-links">
+            <a href="index.html" class="btn-secondary" style="text-decoration: none; display: inline-block; padding: 10px 20px; border-radius: 4px;">← Back to Dashboard</a>
+        </nav>
+
+        <!-- Add Student Form -->
+        <section class="form-container">
+            <div class="form-card">
+                <h2>Add New Student</h2>
+                <form id="add-student-form">
+                    <div class="form-group">
+                        <label for="name">Full Name *</label>
+                        <input type="text" id="name" name="name" required placeholder="Enter student full name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" name="email" required placeholder="Enter student email">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Phone Number *</label>
+                        <input type="tel" id="phone" name="phone" required placeholder="Enter student phone number">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="course">Course *</label>
+                        <select id="course" name="course" required>
+                            <option value="">Select a course</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Business">Business</option>
+                            <option value="Medicine">Medicine</option>
+                            <option value="Arts">Arts</option>
+                            <option value="Science">Science</option>
+                            <option value="Law">Law</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="gpa">GPA (Optional)</label>
+                        <input type="number" id="gpa" name="gpa" step="0.01" min="0" max="4.0" placeholder="Enter GPA (0.0 - 4.0)">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Add Student</button>
+                        <button type="reset" class="btn-secondary">Clear Form</button>
+                    </div>
+
+                    <div id="message" class="message"></div>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <script src="theme-manager.js"></script>
+    <script>
+        // Check authentication on page load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch('/api/check_auth');
+                if (response.status !== 200) {
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Handle logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = 'login.html';
+        });
+
+        // Handle form submission
+        document.getElementById('add-student-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                course: document.getElementById('course').value,
+                gpa: document.getElementById('gpa').value || 0.0
+            };
+
+            try {
+                const response = await fetch('/api/students', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                const messageDiv = document.getElementById('message');
+
+                if (response.ok) {
+                    messageDiv.className = 'message success';
+                    messageDiv.textContent = '✓ Student added successfully!';
+                    document.getElementById('add-student-form').reset();
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                } else {
+                    messageDiv.className = 'message error';
+                    messageDiv.textContent = '✗ Error: ' + (data.error || 'Failed to add student');
+                }
+            } catch (error) {
+                const messageDiv = document.getElementById('message');
+                messageDiv.className = 'message error';
+                messageDiv.textContent = '✗ Error: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>

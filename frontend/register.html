@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Student Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-page">
+    <div class="auth-card">
+        <a href="login.html" class="back-link">&larr; Back to Login</a>
+        <h2>Create Account</h2>
+        <form id="register-form">
+            <div class="input-group">
+                <label for="username">Username</label>
+                <div class="input-with-icon">
+                    <input type="text" id="username" name="username" placeholder="Choose a username" required>
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="password">Password</label>
+                <div class="input-with-icon">
+                    <span class="icon">🔒</span>
+                    <input type="password" id="password" name="password" required>
+                </div>
+            </div>
+            <button type="submit" class="btn-signin">Register</button>
+            <p class="signup-link">Already have an account? <a href="login.html">Sign in</a></p>
+        </form>
+    </div>
+    <script src="theme-manager.js"></script>
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        document.getElementById('register-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const data = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            };
+            const res = await fetch(API_BASE_URL + '/register', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                alert('Registered successfully, please log in');
+                window.location='/login.html';
+            } else {
+                const err = await res.json();
+                alert(err.error || 'Registration failed');
+            }
+        });
+    </script>
+</body>
+</html>

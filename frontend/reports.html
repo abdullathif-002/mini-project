@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports & Analytics - Student Management System</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .reports-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .report-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .report-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .chart-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+        .export-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>📊 Reports & Analytics</h1>
+            <p>View comprehensive student data analytics</p>
+            <button id="logoutBtn" class="btn-secondary logout-btn">Logout</button>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-links">
+            <a href="index.html" class="btn-secondary" style="text-decoration: none; display: inline-block; padding: 10px 20px; border-radius: 4px;">← Back to Dashboard</a>
+        </nav>
+
+        <!-- Reports Section -->
+        <section class="reports-container">
+            <!-- Statistics Card -->
+            <div class="report-card">
+                <h3>📈 Student Statistics</h3>
+                <div class="stat-row">
+                    <span>Total Students:</span>
+                    <strong id="stat-total">0</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Average GPA:</span>
+                    <strong id="stat-avg-gpa">0.00</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Highest GPA:</span>
+                    <strong id="stat-highest-gpa">0.00</strong>
+                </div>
+                <div class="stat-row">
+                    <span>Lowest GPA:</span>
+                    <strong id="stat-lowest-gpa">0.00</strong>
+                </div>
+            </div>
+
+            <!-- Course Distribution -->
+            <div class="report-card">
+                <h3>🎓 Course Distribution</h3>
+                <div id="course-distribution"></div>
+            </div>
+
+            <!-- Enrollment Trend -->
+            <div class="report-card">
+                <h3>📅 Enrollment by Month</h3>
+                <div id="enrollment-trend"></div>
+            </div>
+        </section>
+
+        <!-- Detailed Analytics -->
+        <section class="chart-container">
+            <h2>📋 Detailed Student List by Course</h2>
+            <div id="course-breakdown"></div>
+        </section>
+
+        <!-- Export Section -->
+        <section class="chart-container">
+            <h2>📥 Export Reports</h2>
+            <div class="export-buttons">
+                <button class="btn-primary" onclick="exportToCSV()">Export as CSV</button>
+                <button class="btn-primary" onclick="printReport()">Print Report</button>
+                <button class="btn-secondary" onclick="generatePDF()">Export as PDF (Beta)</button>
+            </div>
+        </section>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script src="theme-manager.js"></script>
+    <script>
+        let allStudents = [];
+
+        // Check authentication on page load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch('/api/check_auth');
+                if (response.status !== 200) {
+                    window.location.href = 'login.html';
+                } else {
+                    await loadReportsData();
+                }
+            } catch (error) {
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Load reports data
+        async function loadReportsData() {
+            try {
+                const response = await fetch('/api/students');
+                if (response.ok) {
+                    allStudents = await response.json();
+                    generateReports();
+                } else {
+                    showMessage('Failed to load student data', 'error');
+                }
+            } catch (error) {
+                showMessage('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Generate all reports
+        function generateReports() {
+            generateStatistics();
+            generateCourseDistribution();
+            generateEnrollmentTrend();
+            generateCourseBreakdown();
+        }
+
+        // Generate statistics
+        function generateStatistics() {
+            if (allStudents.length === 0) return;
+
+            const gpas = allStudents.map(s => s.gpa).filter(g => g > 0);
+            const avgGpa = gpas.length > 0 ? (gpas.reduce((a, b) => a + b, 0) / gpas.length).toFixed(2) : 0;
+            const maxGpa = gpas.length > 0 ? Math.max(...gpas).toFixed(2) : 0;
+            const minGpa = gpas.length > 0 ? Math.min(...gpas).toFixed(2) : 0;
+
+            document.getElementById('stat-total').textContent = allStudents.length;
+            document.getElementById('stat-avg-gpa').textContent = avgGpa;
+            document.getElementById('stat-highest-gpa').textContent = maxGpa;
+            document.getElementById('stat-lowest-gpa').textContent = minGpa;
+        }
+
+        // Generate course distribution
+        function generateCourseDistribution() {
+            const courseCount = {};
+            allStudents.forEach(student => {
+                courseCount[student.course] = (courseCount[student.course] || 0) + 1;
+            });
+
+            const html = Object.entries(courseCount)
+                .map(([course, count]) => `
+                    <div class="stat-row">
+                        <span>${course}:</span>
+                        <strong>${count} students</strong>
+                    </div>
+                `)
+                .join('');
+
+            document.getElementById('course-distribution').innerHTML = html || '<p>No course data available</p>';
+        }
+
+        // Generate enrollment trend
+        function generateEnrollmentTrend() {
+            const monthCount = {};
+            allStudents.forEach(student => {
+                const date = new Date(student.enrollment_date);
+                const month = date.toLocaleString('default', { month: 'short' });
+                monthCount[month] = (monthCount[month] || 0) + 1;
+            });
+
+            const html = Object.entries(monthCount)
+                .map(([month, count]) => `
+                    <div class="stat-row">
+                        <span>${month}:</span>
+                        <strong>${count} enrollments</strong>
+                    </div>
+                `)
+                .join('');
+
+            document.getElementById('enrollment-trend').innerHTML = html || '<p>No enrollment data available</p>';
+        }
+
+        // Generate course breakdown
+        function generateCourseBreakdown() {
+            const courseGroups = {};
+            allStudents.forEach(student => {
+                if (!courseGroups[student.course]) {
+                    courseGroups[student.course] = [];
+                }
+                courseGroups[student.course].push(student);
+            });
+
+            const html = Object.entries(courseGroups)
+                .map(([course, students]) => `
+                    <div style="margin: 20px 0; padding: 15px; background: var(--light-color); border-radius: 8px;">
+                        <h4>${course} (${students.length} students)</h4>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead style="background: var(--border-color);">
+                                <tr>
+                                    <th style="padding: 8px; text-align: left;">Name</th>
+                                    <th style="padding: 8px; text-align: left;">Email</th>
+                                    <th style="padding: 8px; text-align: left;">GPA</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${students.map(s => `
+                                    <tr style="border-bottom: 1px solid var(--border-color);">
+                                        <td style="padding: 8px;">${s.name}</td>
+                                        <td style="padding: 8px;">${s.email}</td>
+                                        <td style="padding: 8px;">${s.gpa.toFixed(2)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `)
+                .join('');
+
+            document.getElementById('course-breakdown').innerHTML = html || '<p>No data available</p>';
+        }
+
+        // Export to CSV
+        function exportToCSV() {
+            let csv = 'ID,Name,Email,Phone,Course,Enrollment Date,GPA\n';
+            allStudents.forEach(student => {
+                csv += `${student.id},"${student.name}","${student.email}","${student.phone}","${student.course}","${student.enrollment_date}",${student.gpa}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'students_report.csv';
+            a.click();
+            showMessage('Report exported as CSV successfully!', 'success');
+        }
+
+        // Print report
+        function printReport() {
+            window.print();
+        }
+
+        // Generate PDF (placeholder)
+        function generatePDF() {
+            showMessage('PDF export feature coming soon!', 'error');
+        }
+
+        // Display message
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = 'message ' + type;
+            messageDiv.textContent = (type === 'error' ? '✗' : '✓') + ' ' + text;
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = 'login.html';
+        });
+    </script>
+</body>
+</html>

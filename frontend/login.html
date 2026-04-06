@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Student Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-page">
+    <div class="login-split-container">
+        <div class="login-welcome-section">
+            <h1>Welcome Back!</h1>
+            <p>Sign in to access your student dashboard and manage your profile, courses, and more.</p>
+            <img src="https://img.icons8.com/color/96/000000/student-male--v2.png" alt="Student Icon" class="welcome-img">
+        </div>
+        <div class="login-form-section">
+            <a href="index.html" class="back-link">&larr; Home</a>
+            <form id="login-form">
+                <h2>Sign In</h2>
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <div class="input-with-icon">
+                        <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="password">Password <a href="#" class="forgot">Forgot?</a></label>
+                    <div class="input-with-icon">
+                        <span class="icon">🔒</span>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-signin">Sign In</button>
+                <p class="signup-link">Don't have an account? <a href="register.html">Create one</a></p>
+                <p class="secure-note">🔒 Secure &amp; Encrypted</p>
+            </form>
+        </div>
+    </div>
+    <script src="theme-manager.js"></script>
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        document.getElementById('login-form').addEventListener('submit', async e => {
+            e.preventDefault();
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const data = {
+                username: usernameInput.value.trim(),
+                password: passwordInput.value
+            };
+            try {
+                const res = await fetch(API_BASE_URL + '/login', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    const result = await res.json();
+                    console.log('Login successful:', result);
+                    // Small delay to ensure session cookie is set
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 500);
+                } else {
+                    const err = await res.json();
+                    console.error('Login error:', err);
+                    alert(err.error || 'Login failed');
+                }
+            } catch (networkErr) {
+                console.error('Network error during login', networkErr);
+                alert('Unable to reach the server. Make sure the backend is running.');
+            }
+        });
+    </script>
+</body>
+</html>

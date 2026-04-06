@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Courses Management - Student Management System</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .course-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #3498db;
+        }
+        .course-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .course-info {
+            margin: 10px 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .course-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        .course-actions button {
+            flex: 1;
+            padding: 8px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-edit-course {
+            background: #3498db;
+            color: white;
+        }
+        .btn-edit-course:hover {
+            background: #2980b9;
+        }
+        .btn-delete-course {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-delete-course:hover {
+            background: #c0392b;
+        }
+        .add-course-section {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .course-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .form-group input,
+        .form-group textarea {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+        }
+        .form-group textarea {
+            grid-column: 1 / -1;
+            resize: vertical;
+            min-height: 80px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🎓 Courses Management</h1>
+            <p>Manage available courses</p>
+            <button id="logoutBtn" class="btn-secondary logout-btn">Logout</button>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-links">
+            <a href="index.html" class="btn-secondary" style="text-decoration: none; display: inline-block; padding: 10px 20px; border-radius: 4px;">← Back to Dashboard</a>
+        </nav>
+
+        <!-- Add Course Section -->
+        <section class="add-course-section">
+            <h2>Add New Course</h2>
+            <form id="add-course-form">
+                <div class="course-form">
+                    <div class="form-group">
+                        <label for="course-name">Course Name *</label>
+                        <input type="text" id="course-name" name="course_name" required placeholder="e.g., Computer Science">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="course-code">Course Code *</label>
+                        <input type="text" id="course-code" name="course_code" required placeholder="e.g., CS101">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="course-credit">Credit Hours *</label>
+                        <input type="number" id="course-credit" name="credit_hours" required min="1" max="6" placeholder="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="course-capacity">Student Capacity *</label>
+                        <input type="number" id="course-capacity" name="capacity" required min="1" placeholder="50">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="course-instructor">Instructor Name</label>
+                        <input type="text" id="course-instructor" name="instructor" placeholder="e.g., Dr. John Smith">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="course-semester">Semester *</label>
+                        <input type="text" id="course-semester" name="semester" required placeholder="e.g., Spring 2024">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="course-description">Course Description</label>
+                        <textarea id="course-description" name="description" placeholder="Brief description of the course..."></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">Add Course</button>
+                <button type="reset" class="btn-secondary">Clear Form</button>
+
+                <div id="add-message" class="message" style="margin-top: 15px;"></div>
+            </form>
+        </section>
+
+        <!-- Courses List -->
+        <section>
+            <h2>Available Courses</h2>
+            <div id="courses-container" class="courses-grid">
+                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #999;">
+                    Loading courses...
+                </div>
+            </div>
+        </section>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script src="theme-manager.js"></script>
+    <script>
+        // Sample courses data (in a real app, this would come from a database)
+        let courses = JSON.parse(localStorage.getItem('courses')) || [
+            {
+                id: 1,
+                name: 'Computer Science',
+                code: 'CS101',
+                credit_hours: 3,
+                capacity: 50,
+                instructor: 'Dr. John Smith',
+                semester: 'Spring 2024',
+                description: 'Introduction to computer science fundamentals'
+            },
+            {
+                id: 2,
+                name: 'Engineering',
+                code: 'ENG101',
+                credit_hours: 4,
+                capacity: 40,
+                instructor: 'Prof. Jane Doe',
+                semester: 'Spring 2024',
+                description: 'Basic engineering principles and applications'
+            },
+            {
+                id: 3,
+                name: 'Business',
+                code: 'BUS101',
+                credit_hours: 3,
+                capacity: 60,
+                instructor: 'Mr. Robert Johnson',
+                semester: 'Spring 2024',
+                description: 'Introduction to business administration'
+            },
+            {
+                id: 4,
+                name: 'Medicine',
+                code: 'MED101',
+                credit_hours: 4,
+                capacity: 30,
+                instructor: 'Dr. Sarah Williams',
+                semester: 'Spring 2024',
+                description: 'Medical sciences foundations'
+            },
+            {
+                id: 5,
+                name: 'Arts',
+                code: 'ART101',
+                credit_hours: 2,
+                capacity: 25,
+                instructor: 'Ms. Emily Brown',
+                semester: 'Spring 2024',
+                description: 'Visual and performing arts'
+            },
+            {
+                id: 6,
+                name: 'Science',
+                code: 'SCI101',
+                credit_hours: 4,
+                capacity: 45,
+                instructor: 'Dr. Michael Green',
+                semester: 'Spring 2024',
+                description: 'Natural sciences and laboratory'
+            }
+        ];
+
+        // Check authentication on page load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch('/api/check_auth');
+                if (response.status !== 200) {
+                    window.location.href = 'login.html';
+                } else {
+                    displayCourses();
+                }
+            } catch (error) {
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Display courses
+        function displayCourses() {
+            const container = document.getElementById('courses-container');
+            
+            if (courses.length === 0) {
+                const emptyColor = document.body.classList.contains('dark-mode') ? '#666' : '#999';
+                container.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: ${emptyColor};">No courses added yet.</div>`;
+                return;
+            }
+
+            container.innerHTML = courses.map(course => `
+                <div class="course-card">
+                    <h3>${course.name}</h3>
+                    <div class="course-info">
+                        <strong>Code:</strong> ${course.code}
+                    </div>
+                    <div class="course-info">
+                        <strong>Credit Hours:</strong> ${course.credit_hours}
+                    </div>
+                    <div class="course-info">
+                        <strong>Capacity:</strong> ${course.capacity} students
+                    </div>
+                    <div class="course-info">
+                        <strong>Instructor:</strong> ${course.instructor || 'Not Assigned'}
+                    </div>
+                    <div class="course-info">
+                        <strong>Semester:</strong> ${course.semester}
+                    </div>
+                    <div class="course-info">
+                        <strong>Description:</strong> ${course.description || 'No description'}
+                    </div>
+                    <div class="course-actions">
+                        <button class="btn-edit-course" onclick="editCourse(${course.id})">Edit</button>
+                        <button class="btn-delete-course" onclick="deleteCourse(${course.id})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Handle form submission
+        document.getElementById('add-course-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const newCourse = {
+                id: Math.max(...courses.map(c => c.id), 0) + 1,
+                name: document.getElementById('course-name').value,
+                code: document.getElementById('course-code').value,
+                credit_hours: parseInt(document.getElementById('course-credit').value),
+                capacity: parseInt(document.getElementById('course-capacity').value),
+                instructor: document.getElementById('course-instructor').value,
+                semester: document.getElementById('course-semester').value,
+                description: document.getElementById('course-description').value
+            };
+
+            courses.push(newCourse);
+            localStorage.setItem('courses', JSON.stringify(courses));
+
+            showAddMessage('Course added successfully!', 'success');
+            document.getElementById('add-course-form').reset();
+            displayCourses();
+
+            setTimeout(() => {
+                document.getElementById('add-message').textContent = '';
+            }, 3000);
+        });
+
+        // Edit course
+        function editCourse(id) {
+            const course = courses.find(c => c.id === id);
+            if (course) {
+                document.getElementById('course-name').value = course.name;
+                document.getElementById('course-code').value = course.code;
+                document.getElementById('course-credit').value = course.credit_hours;
+                document.getElementById('course-capacity').value = course.capacity;
+                document.getElementById('course-instructor').value = course.instructor;
+                document.getElementById('course-semester').value = course.semester;
+                document.getElementById('course-description').value = course.description;
+
+                // Remove old course
+                courses = courses.filter(c => c.id !== id);
+                displayCourses();
+
+                // Scroll to form
+                document.querySelector('.add-course-section').scrollIntoView({ behavior: 'smooth' });
+                showAddMessage('Edit the course details and click "Add Course" to save changes', 'success');
+            }
+        }
+
+        // Delete course
+        function deleteCourse(id) {
+            if (confirm('Are you sure you want to delete this course?')) {
+                courses = courses.filter(c => c.id !== id);
+                localStorage.setItem('courses', JSON.stringify(courses));
+                showMessage('Course deleted successfully!', 'success');
+                displayCourses();
+            }
+        }
+
+        // Display messages
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = 'message ' + type;
+            messageDiv.textContent = (type === 'error' ? '✗' : '✓') + ' ' + text;
+        }
+
+        function showAddMessage(text, type) {
+            const messageDiv = document.getElementById('add-message');
+            messageDiv.className = 'message ' + type;
+            messageDiv.textContent = (type === 'error' ? '✗' : '✓') + ' ' + text;
+        }
+
+        // Handle logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = 'login.html';
+        });
+    </script>
+</body>
+</html>
